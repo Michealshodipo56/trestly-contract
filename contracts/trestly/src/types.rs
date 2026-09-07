@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env};
+use soroban_sdk::{contracttype, contracterror, Address, Env};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -20,7 +20,7 @@ pub enum DataKey {
     Payment(u32),
 }
 
-#[contracttype]
+#[contracterror]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContractError {
     PaymentNotFound = 1,

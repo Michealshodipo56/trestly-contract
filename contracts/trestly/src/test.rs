@@ -4,14 +4,14 @@ use super::{TrestlyContract, TrestlyContractClient};
 use crate::types::ContractError;
 use soroban_sdk::{
     testutils::{Address as _, Ledger, LedgerInfo},
-    token, Address, Env,
+    token, Address, Env, Error,
 };
 
 fn create_token_contract<'a>(env: &Env, admin: &Address) -> (token::StellarAssetClient<'a>, token::Client<'a>) {
-    let contract_address = env.register_stellar_asset_contract(admin.clone());
+    let contract_address = env.register_stellar_asset_contract_v2(admin.clone());
     (
-        token::StellarAssetClient::new(env, &contract_address),
-        token::Client::new(env, &contract_address),
+        token::StellarAssetClient::new(env, &contract_address.address()),
+        token::Client::new(env, &contract_address.address()),
     )
 }
 
@@ -27,7 +27,7 @@ fn setup_test_env() -> (
     let env = Env::default();
     env.mock_all_auths();
 
-    let contract_id = env.register_contract(None, TrestlyContract);
+    let contract_id = env.register(TrestlyContract, ());
     let client = TrestlyContractClient::new(&env, &contract_id);
 
     let payer = Address::generate(&env);
@@ -58,7 +58,7 @@ fn test_create_payment_valid() {
     assert_eq!(payment.resolved, false);
 
     // Check contract holds the tokens
-    assert_eq!(token.balance(&env.as_contract(&client.address)), 100);
+    assert_eq!(token.balance(&client.address), 100);
 }
 
 #[test]
@@ -67,12 +67,12 @@ fn test_create_payment_invalid_amount() {
 
     let result = client.try_create_payment(&payer, &payee, &arbiter, &token.address, &0, &1000);
 
-    assert_eq!(result, Err(Ok(ContractError::InvalidAmount)));
+    assert_eq!(result.err(), Some(Ok(ContractError::InvalidAmount.into())));
 }
 
 #[test]
 fn test_raise_dispute_before_window_closes() {
-    let (env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
+    let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
     let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
 
@@ -91,7 +91,7 @@ fn test_raise_dispute_after_window_closes() {
     // Advance time beyond dispute window
     env.ledger().set(LedgerInfo {
         timestamp: env.ledger().timestamp() + 1001,
-        protocol_version: 20,
+        protocol_version: 27,
         sequence_number: env.ledger().sequence(),
         network_id: Default::default(),
         base_reserve: 10,
@@ -102,7 +102,7 @@ fn test_raise_dispute_after_window_closes() {
 
     let result = client.try_raise_dispute(&payment_id);
 
-    assert_eq!(result, Err(Ok(ContractError::DisputeWindowClosed)));
+    assert_eq!(result.err(), Some(Ok(ContractError::DisputeWindowClosed.into())));
 }
 
 #[test]
@@ -115,7 +115,7 @@ fn test_raise_dispute_twice() {
 
     let result = client.try_raise_dispute(&payment_id);
 
-    assert_eq!(result, Err(Ok(ContractError::AlreadyDisputed)));
+    assert_eq!(result.err(), Some(Ok(ContractError::AlreadyDisputed.into())));
 }
 
 #[test]
@@ -127,7 +127,7 @@ fn test_release_after_window_undisputed() {
     // Advance time beyond dispute window
     env.ledger().set(LedgerInfo {
         timestamp: env.ledger().timestamp() + 1001,
-        protocol_version: 20,
+        protocol_version: 27,
         sequence_number: env.ledger().sequence(),
         network_id: Default::default(),
         base_reserve: 10,
@@ -153,7 +153,7 @@ fn test_release_before_window_closes() {
 
     let result = client.try_release(&payment_id);
 
-    assert_eq!(result, Err(Ok(ContractError::DisputeWindowOpen)));
+    assert_eq!(result.err(), Some(Ok(ContractError::DisputeWindowOpen.into())));
 }
 
 #[test]
@@ -167,7 +167,7 @@ fn test_release_disputed_payment() {
     // Advance time beyond dispute window
     env.ledger().set(LedgerInfo {
         timestamp: env.ledger().timestamp() + 1001,
-        protocol_version: 20,
+        protocol_version: 27,
         sequence_number: env.ledger().sequence(),
         network_id: Default::default(),
         base_reserve: 10,
@@ -178,7 +178,7 @@ fn test_release_disputed_payment() {
 
     let result = client.try_release(&payment_id);
 
-    assert_eq!(result, Err(Ok(ContractError::AlreadyDisputed)));
+    assert_eq!(result.err(), Some(Ok(ContractError::AlreadyDisputed.into())));
 }
 
 #[test]
@@ -227,7 +227,7 @@ fn test_resolve_already_resolved_payment() {
 
     let result = client.try_resolve_dispute(&payment_id, &false);
 
-    assert_eq!(result, Err(Ok(ContractError::AlreadyResolved)));
+    assert_eq!(result.err(), Some(Ok(ContractError::AlreadyResolved.into())));
 }
 
 #[test]
@@ -236,5 +236,5 @@ fn test_get_payment_nonexistent() {
 
     let result = client.try_get_payment(&999);
 
-    assert_eq!(result, Err(Ok(ContractError::PaymentNotFound)));
+    assert_eq!(result.err(), Some(Ok(ContractError::PaymentNotFound.into())));
 }
