@@ -79,4 +79,34 @@ impl TrestlyContract {
 
         Ok(())
     }
+
+    pub fn release(env: Env, payment_id: u32) -> Result<(), ContractError> {
+        let mut payment = storage::get_payment(&env, payment_id)?;
+
+        if payment.resolved {
+            return Err(ContractError::AlreadyResolved);
+        }
+
+        if env.ledger().timestamp() < payment.dispute_window_end {
+            return Err(ContractError::DisputeWindowOpen);
+        }
+
+        if payment.disputed {
+            return Err(ContractError::AlreadyDisputed);
+        }
+
+        // Transfer tokens from contract to payee
+        token::Client::new(&env, &payment.token).transfer(
+            &env.current_contract_address(),
+            &payment.payee,
+            &payment.amount,
+        );
+
+        payment.resolved = true;
+        storage::set_payment(&env, payment_id, &payment);
+
+        events::released(&env, payment_id, &payment.payee, payment.amount);
+
+        Ok(())
+    }
 }
