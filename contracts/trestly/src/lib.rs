@@ -54,4 +54,29 @@ impl TrestlyContract {
 
         Ok(payment_id)
     }
+
+    pub fn raise_dispute(env: Env, payment_id: u32) -> Result<(), ContractError> {
+        let mut payment = storage::get_payment(&env, payment_id)?;
+
+        payment.payer.require_auth();
+
+        if payment.resolved {
+            return Err(ContractError::AlreadyResolved);
+        }
+
+        if env.ledger().timestamp() >= payment.dispute_window_end {
+            return Err(ContractError::DisputeWindowClosed);
+        }
+
+        if payment.disputed {
+            return Err(ContractError::AlreadyDisputed);
+        }
+
+        payment.disputed = true;
+        storage::set_payment(&env, payment_id, &payment);
+
+        events::dispute_raised(&env, payment_id);
+
+        Ok(())
+    }
 }
