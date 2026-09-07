@@ -28,10 +28,10 @@ pub fn create_payment(
     env: Env,
     payer: Address,
     payee: Address,
-    arbiter: Address,
     token: Address,
     amount: i128,
     dispute_window_secs: u64,
+    arbiter: Address,
 ) -> Result<u32, ContractError>
 ```
 Creates a new escrowed payment. Transfers tokens from payer to contract and returns a unique payment ID.
@@ -237,10 +237,10 @@ Follow the same steps as testnet, but:
 let payment_id = contract.create_payment(
     &buyer_address,
     &seller_address,
-    &arbiter_address,
     &token_address,
     &1_000_000, // 1 token (assuming 7 decimals)
     &86400,     // 24 hours in seconds
+    &arbiter_address,
 );
 
 // If service delivered correctly, wait 24 hours and release
