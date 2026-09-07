@@ -2,6 +2,7 @@
 
 mod events;
 mod storage;
+mod test;
 mod types;
 
 use soroban_sdk::{contract, contractimpl, token, Address, Env};
