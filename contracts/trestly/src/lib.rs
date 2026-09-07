@@ -109,4 +109,46 @@ impl TrestlyContract {
 
         Ok(())
     }
+
+    pub fn resolve_dispute(
+        env: Env,
+        payment_id: u32,
+        refund_to_payer: bool,
+    ) -> Result<(), ContractError> {
+        let mut payment = storage::get_payment(&env, payment_id)?;
+
+        payment.arbiter.require_auth();
+
+        if payment.resolved {
+            return Err(ContractError::AlreadyResolved);
+        }
+
+        if !payment.disputed {
+            return Err(ContractError::DisputeWindowOpen);
+        }
+
+        let recipient = if refund_to_payer {
+            &payment.payer
+        } else {
+            &payment.payee
+        };
+
+        // Transfer tokens from contract to recipient
+        token::Client::new(&env, &payment.token).transfer(
+            &env.current_contract_address(),
+            recipient,
+            &payment.amount,
+        );
+
+        payment.resolved = true;
+        storage::set_payment(&env, payment_id, &payment);
+
+        events::dispute_resolved(&env, payment_id, refund_to_payer);
+
+        Ok(())
+    }
+
+    pub fn get_payment(env: Env, payment_id: u32) -> Result<EscrowedPayment, ContractError> {
+        storage::get_payment(&env, payment_id)
+    }
 }
