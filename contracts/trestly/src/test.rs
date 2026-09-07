@@ -45,7 +45,7 @@ fn setup_test_env() -> (
 fn test_create_payment_valid() {
     let (env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     assert_eq!(payment_id, 1);
 
@@ -65,7 +65,7 @@ fn test_create_payment_valid() {
 fn test_create_payment_invalid_amount() {
     let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let result = client.try_create_payment(&payer, &payee, &arbiter, &token.address, &0, &1000);
+    let result = client.try_create_payment(&payer, &payee, &token.address, &0, &1000, &arbiter);
 
     assert_eq!(result.err(), Some(Ok(ContractError::InvalidAmount.into())));
 }
@@ -74,7 +74,7 @@ fn test_create_payment_invalid_amount() {
 fn test_raise_dispute_before_window_closes() {
     let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     client.raise_dispute(&payment_id);
 
@@ -86,7 +86,7 @@ fn test_raise_dispute_before_window_closes() {
 fn test_raise_dispute_after_window_closes() {
     let (env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     // Advance time beyond dispute window
     env.ledger().set(LedgerInfo {
@@ -109,7 +109,7 @@ fn test_raise_dispute_after_window_closes() {
 fn test_raise_dispute_twice() {
     let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     client.raise_dispute(&payment_id);
 
@@ -122,7 +122,7 @@ fn test_raise_dispute_twice() {
 fn test_release_after_window_undisputed() {
     let (env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     // Advance time beyond dispute window
     env.ledger().set(LedgerInfo {
@@ -149,7 +149,7 @@ fn test_release_after_window_undisputed() {
 fn test_release_before_window_closes() {
     let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     let result = client.try_release(&payment_id);
 
@@ -160,7 +160,7 @@ fn test_release_before_window_closes() {
 fn test_release_disputed_payment() {
     let (env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     client.raise_dispute(&payment_id);
 
@@ -185,7 +185,7 @@ fn test_release_disputed_payment() {
 fn test_resolve_dispute_refund_to_payer() {
     let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     client.raise_dispute(&payment_id);
 
@@ -202,7 +202,7 @@ fn test_resolve_dispute_refund_to_payer() {
 fn test_resolve_dispute_release_to_payee() {
     let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     client.raise_dispute(&payment_id);
 
@@ -219,7 +219,7 @@ fn test_resolve_dispute_release_to_payee() {
 fn test_resolve_already_resolved_payment() {
     let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
-    let payment_id = client.create_payment(&payer, &payee, &arbiter, &token.address, &100, &1000);
+    let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 
     client.raise_dispute(&payment_id);
 

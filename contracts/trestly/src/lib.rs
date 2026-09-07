@@ -17,10 +17,10 @@ impl TrestlyContract {
         env: Env,
         payer: Address,
         payee: Address,
-        arbiter: Address,
         token: Address,
         amount: i128,
         dispute_window_secs: u64,
+        arbiter: Address,
     ) -> Result<u32, ContractError> {
         payer.require_auth();
 
