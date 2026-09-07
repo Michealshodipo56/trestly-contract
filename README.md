@@ -133,17 +133,24 @@ The contract emits the following events:
 
 ### Prerequisites
 
-- Rust 2021 edition
+- Rust 2021 edition (1.84+ with wasm32v1-none target, or 1.81 or earlier with wasm32-unknown-unknown)
 - Soroban CLI (latest stable)
 - [soroban-sdk 27.0.6](https://docs.rs/soroban-sdk/27.0.6)
 
 ### Build
 
+For Rust 1.84+:
+```bash
+rustup target add wasm32v1-none
+cargo build --target wasm32v1-none --release
+```
+
+For Rust 1.81 or earlier:
 ```bash
 cargo build --target wasm32-unknown-unknown --release
 ```
 
-The compiled WASM will be in `target/wasm32-unknown-unknown/release/trestly.wasm`.
+The compiled WASM will be in `target/wasm32v1-none/release/trestly.wasm` (or `target/wasm32-unknown-unknown/release/trestly.wasm`).
 
 ### Test
 
@@ -164,6 +171,12 @@ All tests are located in `contracts/trestly/src/test.rs` and cover:
 
 For production deployment, use the release profile with optimizations:
 
+For Rust 1.84+:
+```bash
+cargo build --target wasm32v1-none --release --profile release
+```
+
+For Rust 1.81 or earlier:
 ```bash
 cargo build --target wasm32-unknown-unknown --release --profile release
 ```
@@ -198,9 +211,9 @@ soroban keys address deployer
 4. Build and deploy:
 ```bash
 cd contracts/trestly
-soroban contract build
+soroban contract build  # Uses soroban-cli's configured build target
 soroban contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/trestly.wasm \
+  --wasm ../../target/wasm32v1-none/release/trestly.wasm \
   --source deployer \
   --network testnet
 ```
