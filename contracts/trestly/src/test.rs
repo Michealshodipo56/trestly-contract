@@ -4,7 +4,7 @@ use super::{TrestlyContract, TrestlyContractClient};
 use crate::types::ContractError;
 use soroban_sdk::{
     testutils::{Address as _, Ledger, LedgerInfo},
-    token, Address, Env, Error,
+    token, Address, Env,
 };
 
 fn create_token_contract<'a>(env: &Env, admin: &Address) -> (token::StellarAssetClient<'a>, token::Client<'a>) {
@@ -43,7 +43,7 @@ fn setup_test_env() -> (
 
 #[test]
 fn test_create_payment_valid() {
-    let (env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
+    let (_env, client, payer, payee, arbiter, _token_admin, token) = setup_test_env();
 
     let payment_id = client.create_payment(&payer, &payee, &token.address, &100, &1000, &arbiter);
 

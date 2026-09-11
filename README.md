@@ -187,38 +187,55 @@ The `release` profile in `Cargo.toml` is configured for:
 - Symbol stripping
 - Single codegen unit
 
+## Deployed Contract
+
+**Testnet**: [`CBL4JVIPQBSTGUUVQRZXHDCGCVDPN3N4MHJKKY4MZSM2ZBILIIUJR6WD`](https://stellar.expert/explorer/testnet/contract/CBL4JVIPQBSTGUUVQRZXHDCGCVDPN3N4MHJKKY4MZSM2ZBILIIUJR6WD)
+
+Verified end-to-end via `scripts/e2e-testnet.cjs` — both the happy path (create → wait → release) and the dispute path (create → raise_dispute → resolve_dispute) executed successfully through the actual `trestly-sdk` against this live instance.
+
 ## Deployment
 
-### Testnet Deployment
+### Testnet Deployment (no `stellar-cli` required)
 
-1. Install Soroban CLI:
+`stellar-cli` is a heavy build (large dependency tree, memory-hungry link step) and isn't required to deploy — the same result can be reached with `@stellar/stellar-sdk` directly over RPC:
+
 ```bash
-cargo install --locked soroban-cli
+cd trestly-contract
+cargo build --target wasm32v1-none --release
+node scripts/deploy-testnet.cjs
 ```
 
-2. Configure testnet identity:
+This generates a throwaway deployer keypair, funds it via Friendbot, uploads the wasm, and creates the contract instance — printing the resulting contract ID and saving deployer details to `scripts/testnet-deployer.json` (gitignored). Requires Node.js and the dependencies already installed under `../trestly-sdk/node_modules` (run `npm install` there first if needed).
+
+To re-run the full lifecycle proof against a deployment:
 ```bash
-soroban keys generate deployer --network testnet
+node scripts/e2e-testnet.cjs
 ```
 
-3. Fund the deployer account:
+### Testnet Deployment (via `stellar-cli`)
+
+If you do have `stellar-cli` installed:
+
+1. Configure testnet identity:
 ```bash
-soroban keys address deployer
-# Visit https://laboratory.stellar.org/#account-creator?network=testnet
-# and fund the address
+stellar keys generate deployer --network testnet
 ```
 
-4. Build and deploy:
+2. Fund the deployer account:
+```bash
+stellar keys fund deployer --network testnet
+```
+
+3. Build and deploy:
 ```bash
 cd contracts/trestly
-soroban contract build  # Uses soroban-cli's configured build target
-soroban contract deploy \
+stellar contract deploy \
   --wasm ../../target/wasm32v1-none/release/trestly.wasm \
   --source deployer \
   --network testnet
 ```
 
-5. Save the contract ID for interaction.
+4. Save the contract ID for interaction.
 
 ### Mainnet Deployment
 
